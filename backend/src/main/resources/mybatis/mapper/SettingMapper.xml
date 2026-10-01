@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.smin89.fileupload.mapper.SettingMapper">
+  <!-- 설정 값 조회 -->
+  <select id="getSettings" resultType="settingVO">
+    SELECT max_file_count, max_file_size
+    FROM upload_settings
+    WHERE id = 1
+  </select>
+
+  <!-- 설정 값 변경 -->
+  <update id="updateSettings" parameterType="settingDTO">
+    UPDATE upload_settings
+    SET 
+      max_file_count = #{maxFileCount},
+      max_file_size = #{maxFileSize},
+      updated_at = now()
+    WHERE id = 1
+  </update>
+</mapper>
