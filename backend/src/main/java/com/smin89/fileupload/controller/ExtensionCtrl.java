@@ -45,6 +45,7 @@ public class ExtensionCtrl {
 
     List<ExtensionVO> extensions = extensionsSvc.getExtensionList();
     log.info("[{}] extensions count: {}", logTitle, extensions.size());
+    log.info("[{}] extensions: {}", logTitle, extensions);
 
     // 고정 확장자는 차단 여부(enabled)를 함께 반환한다.
     List<ExtensionDTO.Fixed> fixedExtensions = extensions.stream()
