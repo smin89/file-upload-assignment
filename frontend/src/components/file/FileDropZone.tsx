@@ -1,3 +1,4 @@
+import type { DragEvent } from 'react';
 import { useRef, useState } from 'react';
 
 interface FileDropZoneProps {
@@ -5,10 +6,7 @@ interface FileDropZoneProps {
   disabled?: boolean;
 }
 
-function FileDropZone({
-  onFilesSelected,
-  disabled = false,
-}: FileDropZoneProps) {
+function FileDropZone({ onFilesSelected, disabled = false }: FileDropZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -20,9 +18,7 @@ function FileDropZone({
     onFilesSelected(Array.from(fileList));
   };
 
-  const handleDragOver = (
-    event: React.DragEvent<HTMLDivElement>,
-  ) => {
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
 
     if (!disabled) {
@@ -34,9 +30,7 @@ function FileDropZone({
     setDragging(false);
   };
 
-  const handleDrop = (
-    event: React.DragEvent<HTMLDivElement>,
-  ) => {
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setDragging(false);
 
@@ -59,10 +53,12 @@ function FileDropZone({
         .filter(Boolean)
         .join(' ')}
       role="button"
+      aria-disabled={disabled}
       tabIndex={disabled ? -1 : 0}
       onClick={handleClick}
       onKeyDown={(event) => {
         if (
+          event.target === event.currentTarget &&
           !disabled &&
           (event.key === 'Enter' || event.key === ' ')
         ) {
@@ -77,6 +73,7 @@ function FileDropZone({
       <input
         ref={inputRef}
         type="file"
+        onClick={(event) => event.stopPropagation()}
         multiple
         hidden
         disabled={disabled}
@@ -88,14 +85,10 @@ function FileDropZone({
         }}
       />
 
-      <div className="file-drop-zone__icon">
-        ↑
-      </div>
+      <div className="file-drop-zone__icon">↑</div>
 
       <div className="file-drop-zone__content">
-        <strong className="file-drop-zone__title">
-          파일을 이곳에 드래그하세요
-        </strong>
+        <strong className="file-drop-zone__title">파일을 이곳에 드래그하세요</strong>
 
         <p className="file-drop-zone__description">
           또는 아래 버튼을 눌러 파일을 선택할 수 있습니다.

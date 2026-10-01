@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 
-import { getExtensions } from '../api/extensionApi';
-import { getSetting } from '../api/settingApi';
-import { uploadFiles } from '../api/fileApi';
+import { getExtensions } from '@/api/extensionApi';
+import { uploadFiles } from '@/api/fileApi';
+import { getSetting } from '@/api/settingApi';
+import FileDropZone from '@/components/file/FileDropZone';
+import FileItem from '@/components/file/FileItem';
+import { getApiErrorMessage } from '@/utils/apiUtils';
+import { formatFileSize, validateFile, isSameFile } from '@/utils/fileUtils';
 
-import FileDropZone from '../components/file/FileDropZone';
-import FileItem from '../components/file/FileItem';
+import type { ExtensionSetting } from '@/types/extension';
+import type { UploadedFile } from '@/types/file';
+import type { UploadSetting } from '@/types/setting';
 
-import type { ExtensionSetting } from '../types/extension';
-import type { UploadSetting } from '../types/setting';
-import type { UploadedFile } from '../types/file';
-
-import { formatFileSize, validateFile, isSameFile } from '../utils/fileUtils';
-import { getApiErrorMessage } from '../utils/apiUtils';
+import '@/styles/pages/FileUploadPage.css';
 
 function FileUploadPage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -27,23 +27,32 @@ function FileUploadPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // 화면 이동 또는 StrictMode 재실행으로 끝난 요청은 상태에 반영하지 않는다.
+    let active = true;
     const loadUploadPolicy = async () => {
       try {
         setLoading(true);
 
         const [settingData, extensionData] = await Promise.all([getSetting(), getExtensions()]);
 
+        if (!active) return;
+
         setSetting(settingData);
         setExtensionSetting(extensionData);
       } catch (error) {
+        if (!active) return;
         console.error(error);
         setError(getApiErrorMessage(error, '업로드 설정 정보를 불러오지 못했습니다.'));
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     loadUploadPolicy();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleFilesSelected = (selectedFiles: File[]) => {
@@ -52,7 +61,7 @@ function FileUploadPage() {
     setUploadedFiles([]);
 
     if (!setting || !extensionSetting) {
-      setError(getApiErrorMessage(error, '업로드 설정 정보를 불러오지 못했습니다.'));
+      setError('업로드 설정 정보를 불러오지 못했습니다.');
       return;
     }
 

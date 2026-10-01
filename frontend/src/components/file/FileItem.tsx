@@ -1,4 +1,4 @@
-import { formatFileSize } from '../../utils/fileUtils';
+import { formatFileSize } from '@/utils/fileUtils';
 
 interface FileItemProps {
   file: File;
@@ -6,11 +6,7 @@ interface FileItemProps {
   disabled?: boolean;
 }
 
-function FileItem({
-  file,
-  onRemove,
-  disabled = false,
-}: FileItemProps) {
+function FileItem({ file, onRemove, disabled = false }: FileItemProps) {
   const getExtension = (fileName: string) => {
     const extension = fileName.split('.').pop();
 

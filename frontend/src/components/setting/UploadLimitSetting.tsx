@@ -1,4 +1,7 @@
-import type { UploadSetting } from '../../types/setting';
+import type { UploadSetting } from '@/types/setting';
+
+// API와 상태는 byte 단위를 유지하고, 화면에서만 MB로 변환한다.
+const BYTES_PER_MB = 1024 * 1024;
 
 interface UploadLimitSettingProps {
   setting: UploadSetting;
@@ -33,12 +36,14 @@ function UploadLimitSetting({ setting, saving, onChange, onSave }: UploadLimitSe
               id="max-file-size"
               type="number"
               className="upload-limit__input"
-              min={1}
-              value={setting.maxFileSize}
+              min={1 / BYTES_PER_MB}
+              step="any"
+              disabled={saving}
+              value={setting.maxFileSize / BYTES_PER_MB}
               onChange={(event) =>
                 onChange({
                   ...setting,
-                  maxFileSize: Number(event.target.value),
+                  maxFileSize: Math.round(Number(event.target.value) * BYTES_PER_MB),
                 })
               }
             />
@@ -62,6 +67,8 @@ function UploadLimitSetting({ setting, saving, onChange, onSave }: UploadLimitSe
               type="number"
               className="upload-limit__input"
               min={1}
+              step={1}
+              disabled={saving}
               value={setting.maxFileCount}
               onChange={(event) =>
                 onChange({

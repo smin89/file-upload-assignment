@@ -1,0 +1,437 @@
+.upload-policy {
+  margin-bottom: 20px;
+
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.upload-policy span {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.file-drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+
+  min-height: 260px;
+  padding: 40px;
+
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+
+  text-align: center;
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.file-drop-zone:hover {
+  border-color: #6b7280;
+  background: #f9fafb;
+}
+
+.file-drop-zone--dragging {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.file-drop-zone--disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.file-drop-zone--disabled:hover {
+  border-color: #d1d5db;
+  background: #ffffff;
+}
+
+.file-drop-zone__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 52px;
+  height: 52px;
+
+  border-radius: 50%;
+  background: #f3f4f6;
+
+  color: #4b5563;
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.file-drop-zone--dragging .file-drop-zone__icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.file-drop-zone__content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.file-drop-zone__title {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.file-drop-zone__description {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.file-drop-zone__button {
+  padding: 10px 18px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #374151;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.file-drop-zone__button:hover:not(:disabled) {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.file-drop-zone__button:disabled {
+  cursor: not-allowed;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 14px 16px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  background: #ffffff;
+}
+
+.file-item__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 8px;
+  background: #f3f4f6;
+
+  font-size: 20px;
+}
+
+.file-item__info {
+  min-width: 0;
+  flex: 1;
+}
+
+.file-item__name {
+  overflow: hidden;
+
+  color: #111827;
+  font-size: 14px;
+  font-weight: 500;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-item__meta {
+  margin-top: 4px;
+
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.file-item__remove {
+  flex-shrink: 0;
+
+  padding: 7px 10px;
+
+  border: 0;
+  border-radius: 6px;
+
+  background: transparent;
+  color: #ef4444;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.file-item__remove:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.file-item__remove:disabled {
+  color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.selected-files {
+  margin-top: 28px;
+}
+
+.selected-files__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 14px;
+}
+
+.selected-files__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selected-files__title {
+  margin: 0;
+
+  color: #111827;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.selected-files__count {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.selected-files__clear {
+  padding: 6px 8px;
+
+  border: 0;
+  background: transparent;
+
+  color: #6b7280;
+  font-size: 13px;
+
+  cursor: pointer;
+}
+
+.selected-files__clear:hover:not(:disabled) {
+  color: #ef4444;
+}
+
+.selected-files__clear:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.selected-files__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 업로드 버튼 영역 */
+
+.upload-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 20px;
+  padding-top: 20px;
+
+  border-top: 1px solid #e5e7eb;
+}
+
+.upload-actions__info {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.upload-actions__button {
+  min-width: 160px;
+  padding: 11px 18px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: #2563eb;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.upload-actions__button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.upload-actions__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 업로드 완료 영역 */
+
+.upload-result {
+  margin-top: 28px;
+  padding: 20px;
+
+  border: 1px solid #d1fae5;
+  border-radius: 12px;
+
+  background: #f0fdf4;
+}
+
+.upload-result__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-result__status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 38px;
+  height: 38px;
+
+  border-radius: 50%;
+
+  background: #dcfce7;
+  color: #16a34a;
+
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.upload-result__title {
+  margin: 0;
+
+  color: #166534;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.upload-result__message {
+  margin: 4px 0 0;
+
+  color: #4b5563;
+  font-size: 13px;
+}
+
+/* 업로드 완료 파일 목록 */
+
+.upload-result__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  margin-top: 18px;
+}
+
+.uploaded-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px 14px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+
+  background: #ffffff;
+}
+
+.uploaded-file__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 32px;
+  height: 32px;
+
+  border-radius: 50%;
+
+  background: #dcfce7;
+  color: #16a34a;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.uploaded-file__info {
+  min-width: 0;
+  flex: 1;
+}
+
+.uploaded-file__name {
+  display: block;
+
+  overflow: hidden;
+
+  color: #111827;
+  font-size: 14px;
+  font-weight: 500;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uploaded-file__meta {
+  margin-top: 3px;
+
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.uploaded-file__status {
+  flex-shrink: 0;
+
+  padding: 4px 8px;
+
+  border-radius: 999px;
+
+  background: #dcfce7;
+  color: #15803d;
+
+  font-size: 12px;
+  font-weight: 500;
+}

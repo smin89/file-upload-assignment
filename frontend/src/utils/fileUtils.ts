@@ -1,6 +1,6 @@
-import type { ExtensionSetting } from '../types/extension';
-import type { UploadSetting } from '../types/setting';
-import type { FileValidationResult } from '../types/file';
+import type { ExtensionSetting } from '@/types/extension';
+import type { FileValidationResult } from '@/types/file';
+import type { UploadSetting } from '@/types/setting';
 
 /**
  * 파일 크기를 읽기 쉬운 형태로 변환
@@ -12,7 +12,7 @@ export const formatFileSize = (bytes: number): string => {
   }
 
   const units = ['B', 'KB', 'MB', 'GB'];
-  const unitIndex = Math.floor(Math.log(bytes) / Math.log(1024));
+  const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   const size = bytes / Math.pow(1024, unitIndex);
 
   return `${size.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
@@ -27,9 +27,7 @@ export const formatFileSize = (bytes: number): string => {
  * .env          -> []
  * .env.exe      -> ['exe']
  */
-export const getFileExtensions = (
-  fileName: string,
-): string[] => {
+export const getFileExtensions = (fileName: string): string[] => {
   const lowerName = fileName.toLowerCase();
   const parts = lowerName.split('.');
 
@@ -43,11 +41,12 @@ export const getFileExtensions = (
 
 /**
  * 파일 업로드 정책 검증
+ * 클라이언트 검증은 즉시 안내하기 위한 것이며, 최종 허용 여부는 서버가 다시 검증한다.
  */
 export const validateFile = (
   file: File,
   setting: UploadSetting,
-  extensionSetting: ExtensionSetting,
+  extensionSetting: ExtensionSetting
 ): FileValidationResult => {
   if (file.size === 0) {
     return {
@@ -68,25 +67,21 @@ export const validateFile = (
   const fileExtensions = getFileExtensions(file.name);
 
   // 3. 활성화된 고정 제한 확장자
-  const blockedFixedExtensions =
-    extensionSetting.fixedExtensions
-      .filter((item) => item.enabled)
-      .map((item) => item.extension.toLowerCase());
+  const blockedFixedExtensions = extensionSetting.fixedExtensions
+    .filter((item) => item.enabled)
+    .map((item) => item.extension.toLowerCase());
 
   // 4. 사용자 추가 제한 확장자
-  const blockedCustomExtensions =
-    extensionSetting.customExtensions
-      .map((item) => item.extension.toLowerCase());
+  const blockedCustomExtensions = extensionSetting.customExtensions.map((item) =>
+    item.extension.toLowerCase()
+  );
 
   // 5. 전체 제한 확장자
-  const blockedExtensions = [
-    ...blockedFixedExtensions,
-    ...blockedCustomExtensions,
-  ];
+  const blockedExtensions = [...blockedFixedExtensions, ...blockedCustomExtensions];
 
   // 6. 파일 확장자 중 제한된 확장자가 있는지 검사
   const blockedExtension = fileExtensions.find((extension) =>
-    blockedExtensions.includes(extension),
+    blockedExtensions.includes(extension)
   );
 
   if (blockedExtension) {
@@ -104,10 +99,7 @@ export const validateFile = (
 /**
  * 동일 파일 여부 확인
  */
-export const isSameFile = (
-  file1: File,
-  file2: File,
-): boolean => {
+export const isSameFile = (file1: File, file2: File): boolean => {
   return (
     file1.name === file2.name &&
     file1.size === file2.size &&

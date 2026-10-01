@@ -1,11 +1,12 @@
-import type { FixedExtension } from '../../types/extension';
+import type { FixedExtension } from '@/types/extension';
 
 interface FixedExtensionSettingProps {
+  disabled: boolean;
   extensions: FixedExtension[];
   onChange: (id: number, enabled: boolean) => void;
 }
 
-function FixedExtensionSetting({ extensions, onChange }: FixedExtensionSettingProps) {
+function FixedExtensionSetting({ disabled, extensions, onChange }: FixedExtensionSettingProps) {
   return (
     <section className="settings-card">
       <div className="settings-card__header">
@@ -26,6 +27,7 @@ function FixedExtensionSetting({ extensions, onChange }: FixedExtensionSettingPr
           >
             <input
               type="checkbox"
+              disabled={disabled}
               className="fixed-extension__checkbox"
               checked={item.enabled}
               onChange={(event) => onChange(item.id, event.target.checked)}

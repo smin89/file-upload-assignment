@@ -1,17 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import {
   createCustomExtension,
   deleteCustomExtension,
   getExtensions,
   updateFixedExtension,
-} from '../api/extensionApi';
-import { getSetting, updateSetting } from '../api/settingApi';
-import type { ExtensionSetting } from '../types/extension';
-import type { UploadSetting } from '../types/setting';
-import FixedExtensionSetting from '../components/setting/FixedExtensionSetting';
-import CustomExtensionSetting from '../components/setting/CustomExtensionSetting';
-import UploadLimitSetting from '../components/setting/UploadLimitSetting';
-import { getApiErrorMessage } from '../utils/apiUtils';
+} from '@/api/extensionApi';
+import { getSetting, updateSetting } from '@/api/settingApi';
+import CustomExtensionSetting from '@/components/setting/CustomExtensionSetting';
+import FixedExtensionSetting from '@/components/setting/FixedExtensionSetting';
+import UploadLimitSetting from '@/components/setting/UploadLimitSetting';
+import { getApiErrorMessage } from '@/utils/apiUtils';
+import {
+  EXTENSION_LENGTH_ERROR,
+  MAX_EXTENSION_LENGTH,
+  normalizeExtension,
+} from '@/utils/extensionUtils';
+
+import type { ExtensionSetting } from '@/types/extension';
+import type { UploadSetting } from '@/types/setting';
+
+import '@/styles/pages/SettingsPage.css';
 
 function SettingsPage() {
   const [extensionSetting, setExtensionSetting] = useState<ExtensionSetting | null>(null);
@@ -22,9 +31,14 @@ function SettingsPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updatingExtensions, setUpdatingExtensions] = useState(false);
+  const extensionRequestPending = useRef(false);
+  const settingRequestPending = useRef(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // 화면 이동 또는 StrictMode 재실행으로 끝난 요청은 상태에 반영하지 않는다.
+    let active = true;
     const loadSettings = async () => {
       try {
         setLoading(true);
@@ -32,20 +46,32 @@ function SettingsPage() {
 
         const [extensionData, settingData] = await Promise.all([getExtensions(), getSetting()]);
 
+        if (!active) return;
+
         setExtensionSetting(extensionData);
         setSetting(settingData);
       } catch (error) {
+        if (!active) return;
         console.error(error);
         setError(getApiErrorMessage(error, '설정 정보를 불러오지 못했습니다.'));
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     loadSettings();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleFixedExtensionChange = async (id: number, enabled: boolean) => {
+    // 변경 후 재조회까지 직렬화해 중복 요청과 이전 응답의 덮어쓰기를 막는다.
+    if (extensionRequestPending.current) return;
+    extensionRequestPending.current = true;
+    setUpdatingExtensions(true);
+
     try {
       setError('');
 
@@ -58,6 +84,9 @@ function SettingsPage() {
     } catch (error) {
       console.error(error);
       setError(getApiErrorMessage(error, '고정 확장자 설정 변경에 실패했습니다.'));
+    } finally {
+      extensionRequestPending.current = false;
+      setUpdatingExtensions(false);
     }
   };
 
@@ -67,12 +96,22 @@ function SettingsPage() {
   };
 
   const handleAddCustomExtension = async () => {
-    const extension = customExtension.trim();
+    const extension = normalizeExtension(customExtension);
 
     if (!extension) {
       setError('추가할 확장자를 입력해주세요.');
       return;
     }
+
+    if (extension.length > MAX_EXTENSION_LENGTH) {
+      setError(EXTENSION_LENGTH_ERROR);
+      return;
+    }
+
+    // 변경 후 재조회까지 직렬화해 중복 요청과 이전 응답의 덮어쓰기를 막는다.
+    if (extensionRequestPending.current) return;
+    extensionRequestPending.current = true;
+    setUpdatingExtensions(true);
 
     try {
       setError('');
@@ -87,10 +126,18 @@ function SettingsPage() {
     } catch (error) {
       console.error(error);
       setError(getApiErrorMessage(error, '확장자 추가에 실패했습니다.'));
+    } finally {
+      extensionRequestPending.current = false;
+      setUpdatingExtensions(false);
     }
   };
 
   const handleDeleteCustomExtension = async (id: number) => {
+    // 변경 후 재조회까지 직렬화해 중복 요청과 이전 응답의 덮어쓰기를 막는다.
+    if (extensionRequestPending.current) return;
+    extensionRequestPending.current = true;
+    setUpdatingExtensions(true);
+
     try {
       setError('');
 
@@ -100,14 +147,29 @@ function SettingsPage() {
     } catch (error) {
       console.error(error);
       setError(getApiErrorMessage(error, '확장자 삭제에 실패했습니다.'));
+    } finally {
+      extensionRequestPending.current = false;
+      setUpdatingExtensions(false);
     }
   };
 
   const handleSaveSetting = async () => {
-    if (!setting) {
+    if (!setting || settingRequestPending.current) {
       return;
     }
 
+    if (
+      !Number.isSafeInteger(setting.maxFileSize) ||
+      setting.maxFileSize < 1 ||
+      !Number.isInteger(setting.maxFileCount) ||
+      setting.maxFileCount < 1 ||
+      setting.maxFileCount > 2147483647
+    ) {
+      setError('파일 크기는 1 byte 이상, 파일 개수는 1~2,147,483,647 사이의 정수여야 합니다.');
+      return;
+    }
+
+    settingRequestPending.current = true;
     try {
       setSaving(true);
       setError('');
@@ -121,6 +183,7 @@ function SettingsPage() {
       console.error(error);
       setError(getApiErrorMessage(error, '설정 저장에 실패했습니다.'));
     } finally {
+      settingRequestPending.current = false;
       setSaving(false);
     }
   };
@@ -140,7 +203,7 @@ function SettingsPage() {
       <main className="settings-page">
         <div className="settings-container">
           <div className="settings-state settings-state--error">
-            설정 정보를 불러올 수 없습니다.
+            {error || '설정 정보를 불러올 수 없습니다.'}
           </div>
         </div>
       </main>
@@ -172,11 +235,13 @@ function SettingsPage() {
 
         <div className="settings-content">
           <FixedExtensionSetting
+            disabled={updatingExtensions}
             extensions={extensionSetting.fixedExtensions}
             onChange={handleFixedExtensionChange}
           />
 
           <CustomExtensionSetting
+            disabled={updatingExtensions}
             extensions={extensionSetting.customExtensions}
             count={extensionSetting.customExtensionCount}
             limit={extensionSetting.customExtensionLimit}
