@@ -11,16 +11,38 @@ function FileItem({
   onRemove,
   disabled = false,
 }: FileItemProps) {
+  const getExtension = (fileName: string) => {
+    const extension = fileName.split('.').pop();
+
+    if (!extension || extension === fileName) {
+      return 'FILE';
+    }
+
+    return extension.toUpperCase();
+  };
+
   return (
-    <div>
-      <span>{file.name}</span>
-      {' - '}
-      <span>{formatFileSize(file.size)}</span>
+    <div className="file-item">
+      <div className="file-item__icon">
+        <span>📄</span>
+      </div>
+
+      <div className="file-item__info">
+        <div className="file-item__name" title={file.name}>
+          {file.name}
+        </div>
+
+        <div className="file-item__meta">
+          {getExtension(file.name)} · {formatFileSize(file.size)}
+        </div>
+      </div>
 
       <button
         type="button"
-        disabled={disabled}
+        className="file-item__remove"
         onClick={onRemove}
+        disabled={disabled}
+        aria-label={`${file.name} 삭제`}
       >
         삭제
       </button>

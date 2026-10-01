@@ -1,16 +1,29 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
+
+import Layout from './components/common/Layout';
 import FileUploadPage from './pages/FileUploadPage';
 import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/upload" replace />} />
-        <Route path="/upload" element={<FileUploadPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route
+          path="/"
+          element={<Navigate to="/upload" replace />}
+        />
+
+        <Route
+          path="/upload"
+          element={<FileUploadPage />}
+        />
+
+        <Route
+          path="/settings"
+          element={<SettingsPage />}
+        />
+      </Route>
+    </Routes>
   );
 }
 

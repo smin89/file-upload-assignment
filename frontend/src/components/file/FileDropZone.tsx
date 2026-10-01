@@ -51,24 +51,28 @@ function FileDropZone({
 
   return (
     <div
+      className={[
+        'file-drop-zone',
+        dragging ? 'file-drop-zone--dragging' : '',
+        disabled ? 'file-drop-zone--disabled' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       role="button"
-      tabIndex={0}
+      tabIndex={disabled ? -1 : 0}
       onClick={handleClick}
       onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
+        if (
+          !disabled &&
+          (event.key === 'Enter' || event.key === ' ')
+        ) {
+          event.preventDefault();
           handleClick();
         }
       }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{
-        padding: '40px',
-        border: `2px dashed ${dragging ? '#333' : '#aaa'}`,
-        borderRadius: '8px',
-        textAlign: 'center',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-      }}
     >
       <input
         ref={inputRef}
@@ -84,9 +88,22 @@ function FileDropZone({
         }}
       />
 
-      <p>파일을 이곳에 드래그하거나 클릭하여 선택하세요.</p>
+      <div className="file-drop-zone__icon">
+        ↑
+      </div>
+
+      <div className="file-drop-zone__content">
+        <strong className="file-drop-zone__title">
+          파일을 이곳에 드래그하세요
+        </strong>
+
+        <p className="file-drop-zone__description">
+          또는 아래 버튼을 눌러 파일을 선택할 수 있습니다.
+        </p>
+      </div>
 
       <button
+        className="file-drop-zone__button"
         type="button"
         disabled={disabled}
         onClick={(event) => {

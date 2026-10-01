@@ -5,10 +5,7 @@ import {
   getExtensions,
   updateFixedExtension,
 } from '../api/extensionApi';
-import {
-  getSetting,
-  updateSetting,
-} from '../api/settingApi';
+import { getSetting, updateSetting } from '../api/settingApi';
 import type { ExtensionSetting } from '../types/extension';
 import type { UploadSetting } from '../types/setting';
 import FixedExtensionSetting from '../components/setting/FixedExtensionSetting';
@@ -17,11 +14,9 @@ import UploadLimitSetting from '../components/setting/UploadLimitSetting';
 import { getApiErrorMessage } from '../utils/apiUtils';
 
 function SettingsPage() {
-  const [extensionSetting, setExtensionSetting] =
-    useState<ExtensionSetting | null>(null);
+  const [extensionSetting, setExtensionSetting] = useState<ExtensionSetting | null>(null);
 
-  const [setting, setSetting] =
-    useState<UploadSetting | null>(null);
+  const [setting, setSetting] = useState<UploadSetting | null>(null);
 
   const [customExtension, setCustomExtension] = useState('');
 
@@ -35,21 +30,13 @@ function SettingsPage() {
         setLoading(true);
         setError('');
 
-        const [extensionData, settingData] = await Promise.all([
-          getExtensions(),
-          getSetting(),
-        ]);
+        const [extensionData, settingData] = await Promise.all([getExtensions(), getSetting()]);
 
         setExtensionSetting(extensionData);
         setSetting(settingData);
       } catch (error) {
         console.error(error);
-        setError(
-          getApiErrorMessage(
-            error,
-            '설정 정보를 불러오지 못했습니다.',
-          ),
-        );
+        setError(getApiErrorMessage(error, '설정 정보를 불러오지 못했습니다.'));
       } finally {
         setLoading(false);
       }
@@ -58,10 +45,7 @@ function SettingsPage() {
     loadSettings();
   }, []);
 
-  const handleFixedExtensionChange = async (
-    id: number,
-    enabled: boolean,
-  ) => {
+  const handleFixedExtensionChange = async (id: number, enabled: boolean) => {
     try {
       setError('');
 
@@ -73,12 +57,7 @@ function SettingsPage() {
       await loadExtensions();
     } catch (error) {
       console.error(error);
-      setError(
-        getApiErrorMessage(
-          error,
-          '고정 확장자 설정 변경에 실패했습니다.',
-        ),
-      );
+      setError(getApiErrorMessage(error, '고정 확장자 설정 변경에 실패했습니다.'));
     }
   };
 
@@ -107,12 +86,7 @@ function SettingsPage() {
       await loadExtensions();
     } catch (error) {
       console.error(error);
-      setError(
-        getApiErrorMessage(
-          error,
-          '확장자 추가에 실패했습니다.',
-        ),
-      );
+      setError(getApiErrorMessage(error, '확장자 추가에 실패했습니다.'));
     }
   };
 
@@ -125,12 +99,7 @@ function SettingsPage() {
       await loadExtensions();
     } catch (error) {
       console.error(error);
-      setError(
-        getApiErrorMessage(
-          error,
-          '확장자 삭제에 실패했습니다.',
-        ),
-      );
+      setError(getApiErrorMessage(error, '확장자 삭제에 실패했습니다.'));
     }
   };
 
@@ -150,52 +119,81 @@ function SettingsPage() {
       alert('설정이 저장되었습니다.');
     } catch (error) {
       console.error(error);
-      setError(
-        getApiErrorMessage(
-          error,
-          '설정 저장에 실패했습니다.',
-        ),
-      );
+      setError(getApiErrorMessage(error, '설정 저장에 실패했습니다.'));
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div>설정 정보를 불러오는 중입니다...</div>;
+    return (
+      <main className="settings-page">
+        <div className="settings-container">
+          <div className="settings-state">설정 정보를 불러오는 중입니다...</div>
+        </div>
+      </main>
+    );
   }
 
   if (!extensionSetting || !setting) {
-    return <div>설정 정보를 불러올 수 없습니다.</div>;
+    return (
+      <main className="settings-page">
+        <div className="settings-container">
+          <div className="settings-state settings-state--error">
+            설정 정보를 불러올 수 없습니다.
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <main>
-      <h1>업로드 설정</h1>
+    <main className="settings-page">
+      <div className="settings-container">
+        <header className="settings-header">
+          <h1 className="settings-header__title">업로드 설정</h1>
 
-      {error && <p>{error}</p>}
+          <p className="settings-header__description">
+            파일 업로드 제한 및 확장자 정책을 설정할 수 있습니다.
+          </p>
+        </header>
 
-      <FixedExtensionSetting
-        extensions={extensionSetting.fixedExtensions}
-        onChange={handleFixedExtensionChange}
-      />
+        {error && (
+          <div className="settings-error" role="alert">
+            <div className="settings-error__icon">!</div>
 
-      <CustomExtensionSetting
-        extensions={extensionSetting.customExtensions}
-        count={extensionSetting.customExtensionCount}
-        limit={extensionSetting.customExtensionLimit}
-        value={customExtension}
-        onValueChange={setCustomExtension}
-        onAdd={handleAddCustomExtension}
-        onDelete={handleDeleteCustomExtension}
-      />
+            <div className="settings-error__content">
+              <strong className="settings-error__title">요청을 처리할 수 없습니다.</strong>
 
-      <UploadLimitSetting
-        setting={setting}
-        saving={saving}
-        onChange={setSetting}
-        onSave={handleSaveSetting}
-      />
+              <p className="settings-error__message">{error}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="settings-content">
+          <FixedExtensionSetting
+            extensions={extensionSetting.fixedExtensions}
+            onChange={handleFixedExtensionChange}
+          />
+
+          <CustomExtensionSetting
+            extensions={extensionSetting.customExtensions}
+            count={extensionSetting.customExtensionCount}
+            limit={extensionSetting.customExtensionLimit}
+            value={customExtension}
+            onValueChange={setCustomExtension}
+            onAdd={handleAddCustomExtension}
+            onDelete={handleDeleteCustomExtension}
+          />
+
+          <UploadLimitSetting
+            setting={setting}
+            saving={saving}
+            onChange={setSetting}
+            onSave={handleSaveSetting}
+          />
+        </div>
+      </div>
     </main>
   );
 }
