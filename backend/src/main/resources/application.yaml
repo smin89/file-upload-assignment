@@ -1,3 +1,28 @@
 spring:
   application:
     name: fileupload
+
+  # DB 정책 검증 이전에 적용되는 전송 상한. 더 큰 업로드가 필요하면 환경 변수로 조정한다.
+  servlet:
+    multipart:
+      max-file-size: ${UPLOAD_MAX_FILE_SIZE:100MB}
+      max-request-size: ${UPLOAD_MAX_REQUEST_SIZE:110MB}
+
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://localhost:3306/file_upload
+    username: root
+    password: 0828
+
+mybatis:
+  mapper-locations: classpath:mybatis/mapper/**/*.xml
+  type-aliases-package: com.smin89.fileupload
+  configuration:
+    map-underscore-to-camel-case: true
+
+server:
+  port: 8081
+
+app:
+  upload:
+    directory: ${UPLOAD_DIRECTORY:./data/uploads}

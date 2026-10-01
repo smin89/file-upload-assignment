@@ -290,14 +290,16 @@ DELETE /extensions/custom/{id}
 
 # 4. 업로드 설정 API
 
-`upload_settings`는 애플리케이션 전체에서 사용하는 전역 설정이며 DB에 하나의 설정 행만 존재하는 것을 전제로 한다.
+`upload_settings`는 애플리케이션 전체에서 사용하는 전역 설정이다. 조회·변경은 `id = 1`인 행만 대상으로 하며 요청에서 ID를 받지 않는다.
+
+설정 API 자체는 초기 행을 생성하지 않는다. 행이 없으면 조회·변경 모두 HTTP 500 / `CO500`을 반환하므로 `schema.sql`로 초기 데이터를 준비한다. 커스텀 확장자 등록·삭제 시에는 별도의 자동 생성 처리가 있다.
 
 ## 4.1 업로드 설정 조회
 
 ### Request
 
 ```http
-GET /upload-settings
+GET /setting
 ```
 
 ### Response — 200 OK
@@ -320,6 +322,14 @@ GET /upload-settings
 | maxFileCount | Integer | 개 | 한 요청에서 업로드할 수 있는 최대 파일 수 |
 | maxFileSize | Long | byte | 파일 1개당 최대 크기 |
 
+### Error
+
+| HTTP Status | Result Code | 설명 |
+|---|---|---|
+| 500 | `CO500` | 설정 초기 행이 없거나 DB 조회에 실패함 |
+
+초기 행이 없는 경우 메시지는 `업로드 설정이 초기화되지 않았습니다.`이며 `data`는 `null`이다.
+
 ---
 
 ## 4.2 업로드 설정 변경
@@ -327,7 +337,7 @@ GET /upload-settings
 ### Request
 
 ```http
-PUT /upload-settings
+PUT /setting
 Content-Type: application/json
 ```
 
@@ -337,6 +347,15 @@ Content-Type: application/json
   "maxFileSize": 10485760
 }
 ```
+
+### 요청 필드 및 검증
+
+| 이름 | 타입 | 필수 | 유효값 |
+|---|---|---|---|
+| maxFileCount | Integer | Y | 1 이상의 정수 |
+| maxFileSize | Long | Y | 1 이상의 정수, byte 단위 |
+
+두 필드를 모두 전달한다. 필드 누락, `null`, 0, 음수 또는 변환할 수 없는 입력은 HTTP 400 / `CO400`으로 처리한다.
 
 ### Response — 200 OK
 
@@ -357,10 +376,14 @@ Content-Type: application/json
 |---|---|---|
 | 400 | `CO400` | 파일 개수 제한값이 유효하지 않음 |
 | 400 | `CO400` | 파일 크기 제한값이 유효하지 않음 |
+| 500 | `CO500` | 설정 초기 행이 없거나 DB 변경에 실패함 |
 
 ### 비고
 
 - 설정값의 최종 유효성 검증은 서버에서 수행한다.
+- 두 값을 하나의 트랜잭션으로 변경하고 성공 시 적용한 두 값을 `data`에 반환한다.
+- 기존과 동일한 값으로 요청해도 HTTP 200 / `CO200`으로 응답한다.
+- `id`, 생성·수정 시각 등의 DB 내부 필드는 응답에 포함하지 않는다.
 - `maxFileSize`는 byte 단위로 저장한다.
 - 설정 변경 이후의 업로드 요청부터 변경된 정책을 적용한다.
 
@@ -371,6 +394,16 @@ Content-Type: application/json
 ## 5.1 파일 업로드
 
 하나 이상의 파일을 업로드한다.
+
+### 저장 및 운영 설정
+
+- 기본 저장 위치는 실행 디렉터리 기준 `./data/uploads`이며 `UPLOAD_DIRECTORY`로 변경한다. 웹 정적 리소스 경로로 지정하지 않는다.
+- DB의 파일 개수·파일당 크기 제한을 매 요청마다 조회한다.
+- multipart 전송 상한은 별도로 파일당 100MB, 요청 전체 110MB이다. `UPLOAD_MAX_FILE_SIZE`, `UPLOAD_MAX_REQUEST_SIZE`로 조정할 수 있다. DB 설정이 더 커도 전송 상한을 초과하면 413으로 거부된다.
+- MIME 내용 판별은 구현하지 않으며 업로드 응답과 DB에는 `application/octet-stream`을 저장한다. 클라이언트 Content-Type을 신뢰하지 않는다.
+- 경로 구분자, 콜론, 제어문자, 앞뒤 공백, 끝의 점을 포함한 파일명은 거부한다.
+- DB 롤백 시 작성한 파일도 삭제한다. 프로세스 강제 종료, 정리 실패, 커밋 결과 불명 상황은 로그와 저장소·DB 대조를 통한 복구가 필요하다.
+
 
 ### Request
 
@@ -432,14 +465,14 @@ exe가 차단되어 있으면 업로드 거부
       {
         "id": 1,
         "originalName": "document.pdf",
-        "mimeType": "application/pdf",
+        "mimeType": "application/octet-stream",
         "sizeBytes": 102400,
         "createdAt": "2026-09-30T02:30:00"
       },
       {
         "id": 2,
         "originalName": "image.png",
-        "mimeType": "image/png",
+        "mimeType": "application/octet-stream",
         "sizeBytes": 204800,
         "createdAt": "2026-09-30T02:30:00"
       }
@@ -670,7 +703,7 @@ DELETE /files/{id}
 | Table | 사용 API | 목적 |
 |---|---|---|
 | `files` | `/files/**` | 업로드 파일 메타데이터 저장 |
-| `upload_settings` | `/upload-settings` | 전역 업로드 개수/크기 제한 설정 |
+| `upload_settings` | `/setting` | 전역 업로드 개수/크기 제한 설정 |
 | `file_extensions` | `/extensions/**` | 고정/커스텀 확장자 차단 정책 저장 |
 
 `files`의 주요 컬럼은 `id`, `original_name`, `stored_name`, `storage_path`, `mime_type`, `size_bytes`, `sha256`, `created_at`을 기준으로 한다.
@@ -711,8 +744,8 @@ DELETE /files/{id}
 | PATCH | `/extensions/fixed` | 고정 확장자 차단 여부 변경 |
 | POST | `/extensions/custom` | 커스텀 확장자 추가 |
 | DELETE | `/extensions/custom/{id}` | 커스텀 확장자 삭제 |
-| GET | `/upload-settings` | 업로드 설정 조회 |
-| PUT | `/upload-settings` | 업로드 설정 변경 |
+| GET | `/setting` | 업로드 설정 조회 |
+| PUT | `/setting` | 업로드 설정 변경 |
 | POST | `/files` | 파일 업로드 |
 | GET | `/files` | 파일 목록 조회 |
 | GET | `/files/{id}` | 파일 상세 조회 |
