@@ -145,9 +145,58 @@ class FileUploadTests {
         .andExpect(jsonPath("$.data.files[0].storedName").doesNotExist())
         .andExpect(jsonPath("$.data.files[0].storagePath").doesNotExist())
         .andExpect(jsonPath("$.data.files[0].sha256").doesNotExist());
-    mvc.perform(multipart("/files")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.resultCode").value("CO400"));
+    mvc.perform(multipart("/files")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.resultCode").value("MISSING_FILE"));
     mvc.perform(multipart("/files").file(file("a.exe.txt", "abc")))
-        .andExpect(status().isBadRequest()).andExpect(jsonPath("$.data.extension").value("exe"));
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.resultCode").value("BLOCKED_FILE_EXTENSION"))
+        .andExpect(jsonPath("$.message").value("a.exe.txt 파일은 차단된 exe 확장자이므로 업로드할 수 없습니다."))
+        .andExpect(jsonPath("$.data.extension").value("exe"));
+  }
+
+  @Test void uploadFailuresExposeCodesAndLogAtInfoWithoutFileNames() throws Exception {
+    var logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    var appender = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+    appender.start();
+    logger.addAppender(appender);
+    try {
+      FileSvc transactionalService = files -> upload(files);
+      var mvc = MockMvcBuilders.standaloneSetup(new FileCtrl(transactionalService))
+          .setControllerAdvice(new GlobalExceptionHandler()).build();
+      String[][] cases = {{"secret-empty.txt", "", "EMPTY_FILE"},
+          {"secret-large.txt", "x".repeat(101), "FILE_SIZE_EXCEEDED"},
+          {"../secret.txt", "x", "INVALID_FILE_NAME"},
+          {"secret.exe", "x", "BLOCKED_FILE_EXTENSION"}};
+      for (String[] entry : cases) {
+        mvc.perform(multipart("/files").file(file(entry[0], entry[1])))
+            .andExpect(status().is(entry[2].equals("FILE_SIZE_EXCEEDED") ? 413 : 400))
+            .andExpect(jsonPath("$.resultCode").value(entry[2]));
+      }
+      limits.setMaxFileCount(1);
+      mvc.perform(multipart("/files").file(file("a", "x")).file(file("b", "x")))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.resultCode").value("FILE_COUNT_EXCEEDED"));
+      mvc.perform(multipart("/files")).andExpect(status().isBadRequest());
+      var logs = appender.list.stream()
+          .filter(e -> e.getLevel() == ch.qos.logback.classic.Level.INFO)
+          .map(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage).toList();
+      assertEquals(6, logs.size());
+      for (String[] entry : cases) assertTrue(logs.stream().anyMatch(line -> line.contains(entry[2])));
+      assertTrue(logs.stream().anyMatch(line -> line.contains("FILE_COUNT_EXCEEDED")));
+      assertTrue(logs.stream().noneMatch(line -> line.contains("secret")));
+    } finally {
+      logger.detachAppender(appender);
+      appender.stop();
+    }
+  }
+
+  @Test void cleanupReportsFailureAndTreatsMissingFileAsSuccess() throws Exception {
+    var storage = new LocalFileStorage(directory.toString());
+    String name = UUID.randomUUID().toString();
+    assertTrue(storage.removeQuietly(name));
+    Files.createDirectory(directory.resolve(name));
+    Files.writeString(directory.resolve(name).resolve("child"), "keep");
+    assertFalse(storage.removeQuietly(name));
+    assertTrue(Files.exists(directory.resolve(name).resolve("child")));
   }
 
   private FileDTO.UploadResult upload(List<MultipartFile> files) { return tx.execute(status -> service.uploadFiles(files)); }

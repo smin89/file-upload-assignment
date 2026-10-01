@@ -2,6 +2,7 @@ package com.smin89.fileupload.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
+import static com.smin89.fileupload.constants.ResultCode.*;
 import org.springframework.transaction.annotation.Transactional;
 import com.smin89.fileupload.exception.BusinessException;
 import com.smin89.fileupload.dto.SettingDTO;
@@ -26,19 +27,20 @@ public class SettingSvcImpl implements SettingSvc {
 
   @Override
   @Transactional
-  public int updateSettings(SettingDTO settingDTO) {
+  public void updateSettings(SettingDTO settingDTO) {
     if (settingDTO.getMaxFileCount() < 1 || settingDTO.getMaxFileSize() < 1) {
-      throw new BusinessException(HttpStatus.BAD_REQUEST, "업로드 제한값은 1 이상이어야 합니다.");
+      throw new BusinessException(HttpStatus.BAD_REQUEST, INVALID_UPLOAD_SETTING, "업로드 제한값은 1 이상이어야 합니다.", null);
     }
     int updated = settingMapper.updateSettings(settingDTO);
     // 드라이버가 실제 변경 행 수를 반환하는 경우 동일 값 재요청도 성공으로 처리한다.
     if (updated == 0) {
       var current = getSettings();
       if (current.getMaxFileCount() == settingDTO.getMaxFileCount()
-          && current.getMaxFileSize() == settingDTO.getMaxFileSize()) return 0;
+          && current.getMaxFileSize() == settingDTO.getMaxFileSize()) {
+        return;
+      }
       throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "업로드 설정 변경에 실패했습니다.");
     }
     if (updated != 1) throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "업로드 설정 변경에 실패했습니다.");
-    return updated;
   }
 }

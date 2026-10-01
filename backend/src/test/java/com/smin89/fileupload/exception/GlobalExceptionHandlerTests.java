@@ -83,6 +83,21 @@ class GlobalExceptionHandlerTests {
   }
 
   @Test
+  void multipartLimitUsesSizeCodeAndInfoLog() throws Exception {
+    var logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    var appender = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+    appender.start(); logger.addAppender(appender);
+    try {
+      mvc.perform(post("/files"))
+          .andExpect(status().isPayloadTooLarge())
+          .andExpect(jsonPath("$.resultCode").value("FILE_SIZE_EXCEEDED"));
+      org.junit.jupiter.api.Assertions.assertTrue(appender.list.stream().anyMatch(e ->
+          e.getLevel() == ch.qos.logback.classic.Level.INFO
+          && e.getFormattedMessage().contains("파일 업로드 실패: status=413, code=FILE_SIZE_EXCEEDED")));
+    } finally { logger.detachAppender(appender); appender.stop(); }
+  }
+
+  @Test
   void businessErrorRejectsSuccessStatus() {
     org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
         () -> new BusinessException(HttpStatus.OK, "잘못된 상태"));
@@ -90,6 +105,11 @@ class GlobalExceptionHandlerTests {
 
   @RestController
   static class TestController {
+    @org.springframework.web.bind.annotation.PostMapping("/files")
+    public String oversized() {
+      throw new org.springframework.web.multipart.MaxUploadSizeExceededException(100);
+    }
+
     @GetMapping("/test/blocked")
     public String blocked() {
       throw new BusinessException(HttpStatus.BAD_REQUEST, "차단된 확장자가 포함된 파일입니다.",

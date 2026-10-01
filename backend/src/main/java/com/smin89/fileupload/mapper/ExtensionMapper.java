@@ -13,8 +13,6 @@ import com.smin89.fileupload.vo.ExtensionVO;
 public interface ExtensionMapper {
   List<ExtensionVO> getExtensionList();
 
-  ExtensionVO getExtension(@Param("id") long id);
-
   int updateFixedExtension(ExtensionDTO extensionsDTO);
 
   ExtensionVO getExtensionByName(@Param("extension") String extension);

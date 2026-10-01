@@ -33,6 +33,35 @@ class ExtensionWriteTests {
     when(mapper.lockCustomPolicy()).thenReturn(1);
   }
 
+  @Test void listResponseKeepsExistingJsonFields() throws Exception {
+    var fixed = row("FIXED", true);
+    fixed.setExtension("exe");
+    var custom = row("CUSTOM", true);
+    custom.setId(2L);
+    custom.setExtension("sh");
+    when(mapper.getExtensionList()).thenReturn(java.util.List.of(fixed, custom));
+    mvc.perform(get("/extensions"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data", org.hamcrest.Matchers.aMapWithSize(5)))
+        .andExpect(jsonPath("$.data.totalExtCount").value(2))
+        .andExpect(jsonPath("$.data.customExtensionCount").value(1))
+        .andExpect(jsonPath("$.data.customExtensionLimit").value(200))
+        .andExpect(jsonPath("$.data.fixedExtensions[0].enabled").value(true))
+        .andExpect(jsonPath("$.data.customExtensions[0].extension").value("sh"))
+        .andExpect(jsonPath("$.data.customExtensions[0].enabled").doesNotExist());
+  }
+
+  @Test void businessFailuresHaveDistinctResponseCodes() throws Exception {
+    when(mapper.getExtensionByName("exe")).thenReturn(row("FIXED", false));
+    mvc.perform(post("/extensions/custom").contentType(MediaType.APPLICATION_JSON).content("{\"extension\":\"EXE\"}"))
+        .andExpect(status().isConflict()).andExpect(jsonPath("$.resultCode").value("DUPLICATE_EXTENSION"));
+    mvc.perform(post("/extensions/custom").contentType(MediaType.APPLICATION_JSON).content("{\"extension\":\"a b\"}"))
+        .andExpect(status().isBadRequest()).andExpect(jsonPath("$.resultCode").value("INVALID_EXTENSION"));
+    when(mapper.countCustomExtensions()).thenReturn(200);
+    mvc.perform(post("/extensions/custom").contentType(MediaType.APPLICATION_JSON).content("{\"extension\":\"sh\"}"))
+        .andExpect(status().isBadRequest()).andExpect(jsonPath("$.resultCode").value("EXTENSION_LIMIT_EXCEEDED"));
+  }
+
   @Test void missingUpdateFieldsDoNotWrite() throws Exception {
     for (String body : new String[]{"{}", "{\"id\":1}", "{\"id\":1,\"enabled\":null}",
         "{\"enabled\":true}", "{\"id\":0,\"enabled\":false}"}) {
@@ -75,7 +104,8 @@ class ExtensionWriteTests {
   @Test void length20AndLastAvailableSlotAreAccepted() {
     when(mapper.countCustomExtensions()).thenReturn(199);
     when(mapper.regCustomExtension("x".repeat(20))).thenReturn(1);
-    assertEquals(1, service.regCustomExtension("x".repeat(20)));
+    assertDoesNotThrow(() -> service.regCustomExtension("x".repeat(20)));
+    verify(mapper).regCustomExtension("x".repeat(20));
   }
 
   @Test void countLimitPreventsInsert() {
@@ -114,7 +144,8 @@ class ExtensionWriteTests {
   @Test void missingPolicyIsInitializedBeforeRegistration() {
     when(mapper.ensureCustomPolicy()).thenReturn(1);
     when(mapper.regCustomExtension("sh")).thenReturn(1);
-    assertEquals(1, service.regCustomExtension("sh"));
+    assertDoesNotThrow(() -> service.regCustomExtension("sh"));
+    verify(mapper).regCustomExtension("sh");
     var order = inOrder(mapper);
     order.verify(mapper).ensureCustomPolicy();
     order.verify(mapper).lockCustomPolicy();
@@ -125,7 +156,8 @@ class ExtensionWriteTests {
     // MariaDB는 값이 바뀌지 않은 UPSERT의 영향 행 수로 0을 반환할 수 있다.
     when(mapper.ensureCustomPolicy()).thenReturn(0);
     when(mapper.regCustomExtension("sh")).thenReturn(1);
-    assertEquals(1, service.regCustomExtension("sh"));
+    assertDoesNotThrow(() -> service.regCustomExtension("sh"));
+    verify(mapper).regCustomExtension("sh");
   }
 
   @Test void unavailablePolicyNeverProceedsToInsert() {

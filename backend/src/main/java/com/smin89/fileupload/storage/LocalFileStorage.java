@@ -10,6 +10,7 @@ import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import static com.smin89.fileupload.constants.ResultCode.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import com.smin89.fileupload.exception.BusinessException;
@@ -38,12 +39,12 @@ public class LocalFileStorage {
         int read;
         while ((read = input.read(buffer)) != -1) {
           size += read;
-          if (size > maxSize) throw new BusinessException(HttpStatus.PAYLOAD_TOO_LARGE, "허용된 파일 크기를 초과했습니다.");
+          if (size > maxSize) throw new BusinessException(HttpStatus.PAYLOAD_TOO_LARGE, FILE_SIZE_EXCEEDED, "허용된 파일 크기를 초과했습니다.", null);
           output.write(buffer, 0, read);
           digest.update(buffer, 0, read);
         }
       }
-      if (size == 0) throw new BusinessException(HttpStatus.BAD_REQUEST, "0 byte 파일은 업로드할 수 없습니다.");
+      if (size == 0) throw new BusinessException(HttpStatus.BAD_REQUEST, EMPTY_FILE, "0 byte 파일은 업로드할 수 없습니다.", null);
       var metadata = new FileVO();
       metadata.setOriginalName(file.getOriginalFilename());
       metadata.setStoredName(storedName);
@@ -66,8 +67,14 @@ public class LocalFileStorage {
     return file.getInputStream();
   }
 
-  public void removeQuietly(String name) {
-    try { Files.deleteIfExists(root.resolve(name)); }
-    catch (IOException ex) { log.error("롤백 파일 정리 실패: {}", name, ex); }
+  /** 파일이 이미 없으면 정리 성공으로 취급하며, 실패는 로그와 반환값으로 알린다. */
+  public boolean removeQuietly(String name) {
+    try {
+      Files.deleteIfExists(root.resolve(name));
+      return true;
+    } catch (IOException ex) {
+      log.error("롤백 파일 정리 실패: {}", name, ex);
+      return false;
+    }
   }
 }

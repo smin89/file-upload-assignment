@@ -9,5 +9,5 @@ public interface SettingSvc {
   SettingVO getSettings();
 
   // 설정 값 변경
-  int updateSettings(SettingDTO settingDTO);
+  void updateSettings(SettingDTO settingDTO);
 }
