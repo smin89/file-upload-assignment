@@ -12,6 +12,7 @@ import type { UploadSetting } from '../types/setting';
 import type { UploadedFile } from '../types/file';
 
 import { formatFileSize, validateFile, isSameFile} from '../utils/fileUtils';
+import { getApiErrorMessage } from '../utils/apiUtils';
 
 function FileUploadPage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -40,7 +41,12 @@ function FileUploadPage() {
         setExtensionSetting(extensionData);
       } catch (error) {
         console.error(error);
-        setError('업로드 설정 정보를 불러오지 못했습니다.');
+        setError(
+          getApiErrorMessage(
+            error,
+            '업로드 설정 정보를 불러오지 못했습니다.',
+          ),
+        );
       } finally {
         setLoading(false);
       }
@@ -55,7 +61,12 @@ function FileUploadPage() {
     setUploadedFiles([]);
 
     if (!setting || !extensionSetting) {
-      setError('업로드 설정 정보를 불러오지 못했습니다.');
+      setError(
+        getApiErrorMessage(
+          error,
+          '업로드 설정 정보를 불러오지 못했습니다.',
+        ),
+      );
       return;
     }
 
@@ -180,7 +191,12 @@ function FileUploadPage() {
       setFiles([]);
     } catch (error) {
       console.error(error);
-      setError('파일 업로드에 실패했습니다.');
+      setError(
+        getApiErrorMessage(
+          error,
+          '파일 업로드에 실패했습니다.',
+        ),
+      );
     } finally {
       setUploading(false);
     }

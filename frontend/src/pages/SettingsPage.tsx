@@ -14,6 +14,7 @@ import type { UploadSetting } from '../types/setting';
 import FixedExtensionSetting from '../components/setting/FixedExtensionSetting';
 import CustomExtensionSetting from '../components/setting/CustomExtensionSetting';
 import UploadLimitSetting from '../components/setting/UploadLimitSetting';
+import { getApiErrorMessage } from '../utils/apiUtils';
 
 function SettingsPage() {
   const [extensionSetting, setExtensionSetting] =
@@ -43,7 +44,12 @@ function SettingsPage() {
         setSetting(settingData);
       } catch (error) {
         console.error(error);
-        setError('설정 정보를 불러오지 못했습니다.');
+        setError(
+          getApiErrorMessage(
+            error,
+            '설정 정보를 불러오지 못했습니다.',
+          ),
+        );
       } finally {
         setLoading(false);
       }
@@ -67,7 +73,12 @@ function SettingsPage() {
       await loadExtensions();
     } catch (error) {
       console.error(error);
-      setError('고정 확장자 설정 변경에 실패했습니다.');
+      setError(
+        getApiErrorMessage(
+          error,
+          '고정 확장자 설정 변경에 실패했습니다.',
+        ),
+      );
     }
   };
 
@@ -96,7 +107,12 @@ function SettingsPage() {
       await loadExtensions();
     } catch (error) {
       console.error(error);
-      setError('커스텀 확장자 추가에 실패했습니다.');
+      setError(
+        getApiErrorMessage(
+          error,
+          '확장자 추가에 실패했습니다.',
+        ),
+      );
     }
   };
 
@@ -109,7 +125,12 @@ function SettingsPage() {
       await loadExtensions();
     } catch (error) {
       console.error(error);
-      setError('커스텀 확장자 삭제에 실패했습니다.');
+      setError(
+        getApiErrorMessage(
+          error,
+          '확장자 삭제에 실패했습니다.',
+        ),
+      );
     }
   };
 
@@ -129,7 +150,12 @@ function SettingsPage() {
       alert('설정이 저장되었습니다.');
     } catch (error) {
       console.error(error);
-      setError('설정 저장에 실패했습니다.');
+      setError(
+        getApiErrorMessage(
+          error,
+          '설정 저장에 실패했습니다.',
+        ),
+      );
     } finally {
       setSaving(false);
     }
