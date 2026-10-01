@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+  // 업무 예외는 호출부에서 공개용으로 작성한 메시지와 부가 정보를 그대로 전달한다.
   @ExceptionHandler(BusinessException.class)
   public ResponseEntity<Object> handleBusinessException(BusinessException ex) {
     boolean serverError = ex.getStatus().is5xxServerError();
@@ -29,7 +30,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return ResponseEntity.status(ex.getStatus()).body(result);
   }
 
-  // Spring이 결정한 상태 코드와 Allow 등의 응답 헤더는 유지한다.
+  // Spring MVC 오류의 본문을 공통 DTO로 바꾸되 상태 코드와 Allow 등의 헤더는 유지한다.
   @Override
   protected ResponseEntity<Object> handleExceptionInternal(
       Exception ex, Object body, HttpHeaders headers,
@@ -53,6 +54,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ex, null, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
   }
 
+  // 일반 예외는 내부 메시지 대신 HTTP 상태별 공개 메시지로 응답한다.
   private String messageFor(int status) {
     return switch (status) {
       case 400 -> "요청 형식 또는 입력값을 확인해주세요.";

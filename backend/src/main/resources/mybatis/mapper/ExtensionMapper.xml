@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.smin89.fileupload.mapper.ExtensionMapper">
+  <!-- 확장자 리스트 조회 -->
+  <select id="getExtensionList" resultType="extensionsVO">
+    SELECT id, extension, extension_type, enabled, created_at, updated_at
+    FROM file_extensions
+    ORDER BY id
+  </select>
+
+  <!-- 확장자 조회  -->
+  <select id="getExtension" parameterType="long" resultType="extensionsVO">
+    SELECT id, extension, extension_type, enabled, created_at, updated_at
+    FROM file_extensions
+    WHERE id = #{id}
+  </select>
+  
+  <!-- 고정 확장자 사용 여부 변경 -->
+  <update id="updateFixedExtension">
+    UPDATE file_extensions
+    SET 
+      enabled = #{enabled},
+      updated_at = now()
+    WHERE 1=1
+      AND id = #{id} 
+      AND extension_type = 'FIXED'
+  </update>
+
+  <!-- 확장자 명으로 확장자 조회 -->
+  <select id="getExtensionByName" parameterType="String" resultType="extensionsVO">
+    SELECT id, extension, extension_type, enabled, created_at, updated_at
+    FROM file_extensions
+    WHERE extension = #{extension}
+  </select>
+
+  <!-- 확장자 명으로 확장자 조회 -->
+  <insert id="regCustomExtension" parameterType="String">
+    INSERT INTO file_extensions (
+      extension, extension_type, enabled, created_at
+    ) VALUES (
+      #{extension}, 'CUSTOM', true, now()
+    )
+  </insert>
+
+  <!-- 확장자 명으로 확장자 조회 -->
+  <delete id="deleteCustomExtension" parameterType="long">
+    DELETE FROM file_extensions 
+    WHERE id = #{id} AND extension_type = 'CUSTOM'
+  </delete>
+  <!-- 상태 검증부터 변경까지 행 잠금을 유지한다. -->
+  <select id="getExtensionForUpdate" resultType="extensionsVO">
+    SELECT id, extension, extension_type, enabled, created_at, updated_at
+    FROM file_extensions WHERE id = #{id} FOR UPDATE
+  </select>
+
+  <!-- 동시 최초 요청도 PK로 직렬화하며 기존 설정값과 수정 시각은 유지한다. -->
+  <insert id="ensureCustomPolicy">
+    INSERT INTO upload_settings (id) VALUES (1)
+    ON DUPLICATE KEY UPDATE id = id
+  </insert>
+
+  <!-- 등록·삭제의 공통 잠금. 조회 전 획득하여 동시 등록 시 200개 초과를 방지한다. -->
+  <select id="lockCustomPolicy" resultType="java.lang.Integer">
+    SELECT id FROM upload_settings WHERE id = 1 FOR UPDATE
+  </select>
+
+  <select id="countCustomExtensions" resultType="int">
+    SELECT COUNT(*) FROM file_extensions WHERE extension_type = 'CUSTOM'
+  </select>
+</mapper>
